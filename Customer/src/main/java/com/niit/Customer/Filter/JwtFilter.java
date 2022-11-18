@@ -1,5 +1,6 @@
 package com.niit.Customer.Filter;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -12,26 +13,23 @@ public class JwtFilter extends GenericFilterBean {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
-        HttpServletResponse httpServletResponse=(HttpServletResponse) servletResponse;
-        ServletOutputStream pw =httpServletResponse.getOutputStream();
-        //expects the token  to come from header
-        String authHeader=httpServletRequest.getHeader("Authorization");
-        if (authHeader==null || !authHeader.startsWith("Bearer")){
-            //If token is not coming than set the response status as UNAUTHORIZED
+        HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+        ServletOutputStream pw = httpServletResponse.getOutputStream();
+        String authHeader = httpServletRequest.getHeader("authorization");
+        if (authHeader == null||!authHeader.startsWith("Bearer")){
             httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            pw.println("Missing or invalid Token ");
+            pw.println("Missing or invalid Token");
             pw.close();
+        }else {
+            String jwtToken = authHeader.substring(7);
 
-        }else {//extract token from the header
-            String jwtToken = authHeader.substring(7);//Bearer => 6+1 since token begins with Bearer
-            //token validation
-            String username = Jwts.parser().setSigningKey("secretkey").parseClaimsJws(jwtToken).getBody().getSubject();
-            httpServletRequest.setAttribute("username", username);
-            // pass the claims in the request
-            filterChain.doFilter(servletRequest, servletResponse);
+            String token = authHeader.substring(7); // removes 'Bearer ' from token value
+            Claims claims = Jwts.parser().setSigningKey("mykey").parseClaimsJws(token).getBody();
+            System.out.println("\nclaims : " + claims);
 
+            httpServletRequest.setAttribute("claims", claims);
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
         }
     }
-
 }
 
